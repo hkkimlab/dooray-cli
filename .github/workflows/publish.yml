@@ -1,0 +1,28 @@
+# Push a tag like v0.3.0 (matching package.json "version") to publish @hkkimlab/dooray-cli to npmjs.com.
+# Auth is npm trusted publishing (OIDC): no token secret; the package's npmjs.com settings trust this workflow.
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Tag must match package.json version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      # trusted publishing needs npm >= 11.5.1; Node 22 ships npm 10
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm test
+      - run: npm publish
